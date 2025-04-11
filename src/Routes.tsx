@@ -6,6 +6,10 @@ import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
 import Admin from './pages/Admin';
 import NotFound from './pages/NotFound';
+import Categories from './pages/Categories';
+import About from './pages/About';
+import Contact from './pages/Contact';
+import BuyMeACoffee from './pages/BuyMeACoffee';
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -13,6 +17,11 @@ export const AppRoutes: React.FC = () => {
       <Route path="/" element={<Home />} />
       <Route path="/blog" element={<Blog />} />
       <Route path="/blog/:id" element={<BlogPost />} />
+      <Route path="/categories" element={<Categories />} />
+      <Route path="/categories/:category" element={<Categories />} />
+      <Route path="/about" element={<About />} />
+      <Route path="/contact" element={<Contact />} />
+      <Route path="/buy-me-a-coffee" element={<BuyMeACoffee />} />
       <Route path="/admin/*" element={<Admin />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
