@@ -11,6 +11,7 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import BuyMeACoffee from './pages/BuyMeACoffee';
 import AuthorDiscussions from './pages/AuthorDiscussions';
+import CreatePost from './pages/CreatePost';
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -25,6 +26,7 @@ export const AppRoutes: React.FC = () => {
       <Route path="/buy-me-a-coffee" element={<BuyMeACoffee />} />
       <Route path="/author-discussions" element={<AuthorDiscussions />} />
       <Route path="/admin/*" element={<Admin />} />
+      <Route path="/admin/create-post" element={<CreatePost />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

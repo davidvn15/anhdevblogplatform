@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Link } from 'react-router-dom';
 import { 
   Search, 
   MoreHorizontal, 
@@ -42,7 +42,6 @@ export const AdminPostList: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedPosts, setSelectedPosts] = useState<string[]>([]);
   
-  // Mock data for demonstration
   const posts: Post[] = [
     { id: "1", title: "Bắt đầu với React và TypeScript", status: "published", category: "Lập trình", author: "Admin", date: "2025-04-05", views: 1205, comments: 25 },
     { id: "2", title: "Tối ưu hóa hiệu suất trong React", status: "published", category: "Hiệu suất", author: "Admin", date: "2025-04-01", views: 843, comments: 12 },
@@ -51,7 +50,6 @@ export const AdminPostList: React.FC = () => {
     { id: "5", title: "Xây dựng API với Node.js", status: "draft", category: "Backend", author: "Editor", date: "2025-03-20", views: 0, comments: 0 },
   ];
 
-  // Filter posts
   const filteredPosts = posts.filter(post => {
     const matchesSearchTerm = post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                               post.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -60,7 +58,6 @@ export const AdminPostList: React.FC = () => {
     return matchesSearchTerm && matchesStatus;
   });
 
-  // Handle select all
   const handleSelectAll = (isChecked: boolean) => {
     if (isChecked) {
       setSelectedPosts(filteredPosts.map(post => post.id));
@@ -69,7 +66,6 @@ export const AdminPostList: React.FC = () => {
     }
   };
 
-  // Handle individual select
   const handleSelectPost = (id: string, isChecked: boolean) => {
     if (isChecked) {
       setSelectedPosts([...selectedPosts, id]);
@@ -87,9 +83,11 @@ export const AdminPostList: React.FC = () => {
               <CardTitle>Bài viết</CardTitle>
               <CardDescription>Quản lý tất cả bài viết trong blog của bạn.</CardDescription>
             </div>
-            <Button>
-              <FileText className="mr-2 h-4 w-4" />
-              Tạo bài viết mới
+            <Button asChild>
+              <Link to="/admin/create-post">
+                <FileText className="mr-2 h-4 w-4" />
+                Tạo bài viết mới
+              </Link>
             </Button>
           </div>
         </CardHeader>
