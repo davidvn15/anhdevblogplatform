@@ -9,7 +9,36 @@ import { Label } from "@/components/ui/label";
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Eye, FileText, Save } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import ReactMarkdown from 'react-markdown';
+
+// Hàm đơn giản để hiển thị nội dung Markdown
+const SimpleMarkdownRenderer = ({ children }: { children: string }) => {
+  // Chuyển đổi cơ bản đoạn markdown thành HTML
+  const renderMarkdown = (text: string) => {
+    // Chuyển đổi headings
+    let html = text
+      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+      // Chuyển đổi bôi đậm và in nghiêng
+      .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/gim, '<em>$1</em>')
+      // Chuyển đổi đường link
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/gim, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+      // Chuyển đổi danh sách
+      .replace(/^\s*-\s*(.*$)/gim, '<li>$1</li>')
+      // Chuyển đổi xuống dòng
+      .replace(/\n/gim, '<br />');
+    
+    // Wrap danh sách vào thẻ ul
+    html = html.replace(/<li>.*?<\/li>/gs, match => {
+      return '<ul>' + match + '</ul>';
+    });
+    
+    return { __html: html };
+  };
+
+  return <div dangerouslySetInnerHTML={renderMarkdown(children)} />;
+};
 
 export const MarkdownEditor: React.FC = () => {
   const [title, setTitle] = useState('');
@@ -157,7 +186,7 @@ export const MarkdownEditor: React.FC = () => {
               <TabsContent value="preview">
                 <div className="border rounded-md p-4 min-h-[500px] prose dark:prose-invert max-w-none">
                   {content ? (
-                    <ReactMarkdown>{content}</ReactMarkdown>
+                    <SimpleMarkdownRenderer>{content}</SimpleMarkdownRenderer>
                   ) : (
                     <p className="text-muted-foreground italic">Nội dung xem trước sẽ xuất hiện ở đây...</p>
                   )}
