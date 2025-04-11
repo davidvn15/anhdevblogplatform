@@ -10,6 +10,7 @@ import Categories from './pages/Categories';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import BuyMeACoffee from './pages/BuyMeACoffee';
+import AuthorDiscussions from './pages/AuthorDiscussions';
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -22,6 +23,7 @@ export const AppRoutes: React.FC = () => {
       <Route path="/about" element={<About />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/buy-me-a-coffee" element={<BuyMeACoffee />} />
+      <Route path="/author-discussions" element={<AuthorDiscussions />} />
       <Route path="/admin/*" element={<Admin />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
