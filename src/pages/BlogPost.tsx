@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -9,213 +9,64 @@ import { BlogPostCard } from "@/components/BlogPostCard";
 import { BlogCategories } from "@/components/BlogCategories";
 import { Newsletter } from "@/components/Newsletter";
 import { Share, MessageCircle, ThumbsUp, Facebook, Twitter, Linkedin, Link as LinkIcon, Calendar } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-
-interface Comment {
-  id: string;
-  author: {
-    name: string;
-    avatar: string;
-  };
-  date: string;
-  content: string;
-  likes: number;
-}
-
-interface Post {
-  id: string;
-  title: string;
-  content: string;
-  excerpt: string;
-  date: string;
-  readTime: string;
-  author: {
-    name: string;
-    avatar: string;
-    bio: string;
-  };
-  category: string;
-  coverImage: string;
-  tags: string[];
-  comments: Comment[];
-}
-
-interface RelatedPost {
-  id: string;
-  title: string;
-  excerpt: string;
-  date: string;
-  author: {
-    name: string;
-    avatar: string;
-  };
-  category: string;
-  coverImage: string;
-}
+import { blogApiService, Post, Comment } from '@/services/api';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const BlogPost: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const [post, setPost] = useState<Post | null>(null);
+  const [relatedPosts, setRelatedPosts] = useState<Post[]>([]);
   const [commentText, setCommentText] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRelatedLoading, setIsRelatedLoading] = useState(true);
   const { toast } = useToast();
   
-  // Mock data for demo
-  const post: Post = {
-    id: "1",
-    title: "Bắt đầu với React và TypeScript trong năm 2025",
-    content: `
-      <p>React và TypeScript là một sự kết hợp mạnh mẽ đang trở thành tiêu chuẩn trong phát triển frontend hiện đại. Bài viết này sẽ hướng dẫn bạn về cách bắt đầu với React và TypeScript trong năm 2025, khi cả hai công nghệ đã có nhiều cải tiến đáng kể.</p>
+  // Fetch thông tin bài viết từ API
+  useEffect(() => {
+    const fetchPost = async () => {
+      if (!id) return;
       
-      <h2>Tại sao nên sử dụng TypeScript với React?</h2>
-      <p>TypeScript cung cấp kiểu dữ liệu tĩnh cho JavaScript, giúp phát hiện lỗi sớm hơn trong quá trình phát triển. Khi kết hợp với React, TypeScript mang lại nhiều lợi ích:</p>
-      <ul>
-        <li>Phát hiện lỗi sớm hơn trong quá trình phát triển</li>
-        <li>Trải nghiệm phát triển tốt hơn với IntelliSense và auto-completion</li>
-        <li>Refactoring code an toàn và dễ dàng hơn</li>
-        <li>Documentation tốt hơn cho các components và props</li>
-      </ul>
-      
-      <h2>Thiết lập môi trường phát triển</h2>
-      <p>Với sự phát triển của các công cụ hiện đại, việc thiết lập môi trường phát triển React + TypeScript trở nên dễ dàng hơn bao giờ hết. Cách đơn giản nhất là sử dụng Vite:</p>
-      <pre><code>npm create vite@latest my-react-ts-app -- --template react-ts</code></pre>
-      <p>Hoặc nếu bạn muốn sử dụng Create React App (mặc dù nó đang dần được thay thế bởi các tool hiện đại hơn):</p>
-      <pre><code>npx create-react-app my-app --template typescript</code></pre>
-      
-      <h2>Các khái niệm cơ bản khi làm việc với TypeScript trong React</h2>
-      <h3>1. Định nghĩa props cho components</h3>
-      <p>Một trong những việc phổ biến nhất khi sử dụng TypeScript với React là định nghĩa kiểu dữ liệu cho props:</p>
-      <pre><code>
-      interface ButtonProps {
-        text: string;
-        onClick: () => void;
-        variant?: 'primary' | 'secondary' | 'danger';
-        disabled?: boolean;
+      setIsLoading(true);
+      try {
+        const { post } = await blogApiService.getPostById(id);
+        setPost(post);
+        document.title = `${post.title} | Blog`;
+      } catch (error) {
+        console.error('Failed to fetch post:', error);
+        toast({
+          title: "Lỗi",
+          description: "Không thể tải bài viết. Bài viết không tồn tại hoặc đã bị xóa.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
       }
+    };
+    
+    fetchPost();
+  }, [id, toast]);
+  
+  // Fetch bài viết liên quan
+  useEffect(() => {
+    const fetchRelatedPosts = async () => {
+      if (!id) return;
       
-      const Button: React.FC<ButtonProps> = ({
-        text,
-        onClick,
-        variant = 'primary',
-        disabled = false
-      }) => {
-        return (
-          &lt;button
-            onClick={onClick}
-            disabled={disabled}
-            className={\`btn btn-\${variant}\`}
-          &gt;
-            {text}
-          &lt;/button&gt;
-        );
-      };
-      </code></pre>
-      
-      <h3>2. Các hooks với TypeScript</h3>
-      <p>TypeScript có thể cải thiện đáng kể trải nghiệm khi làm việc với React hooks:</p>
-      <pre><code>
-      // useState với kiểu dữ liệu rõ ràng
-      const [count, setCount] = useState<number>(0);
-      
-      // useReducer với kiểu dữ liệu đầy đủ
-      interface State {
-        count: number;
-        text: string;
+      setIsRelatedLoading(true);
+      try {
+        const { relatedPosts } = await blogApiService.getRelatedPosts(id);
+        setRelatedPosts(relatedPosts);
+      } catch (error) {
+        console.error('Failed to fetch related posts:', error);
+      } finally {
+        setIsRelatedLoading(false);
       }
-      
-      type Action =
-        | { type: 'INCREMENT' }
-        | { type: 'DECREMENT' }
-        | { type: 'SET_TEXT'; payload: string };
-      
-      const reducer = (state: State, action: Action): State => {
-        switch (action.type) {
-          case 'INCREMENT':
-            return { ...state, count: state.count + 1 };
-          case 'DECREMENT':
-            return { ...state, count: state.count - 1 };
-          case 'SET_TEXT':
-            return { ...state, text: action.payload };
-        }
-      };
-      
-      const [state, dispatch] = useReducer(reducer, { count: 0, text: '' });
-      </code></pre>
-      
-      <h2>Best practices trong năm 2025</h2>
-      <p>Dưới đây là một số best practices khi làm việc với React và TypeScript trong năm 2025:</p>
-      <ul>
-        <li>Sử dụng functional components thay vì class components</li>
-        <li>Tận dụng React.FC cho các component đơn giản</li>
-        <li>Sử dụng interface cho props, state và context</li>
-        <li>Tách biệt các kiểu dữ liệu phức tạp vào các file riêng</li>
-        <li>Sử dụng generic types cho các hooks và components tái sử dụng</li>
-        <li>Tận dụng các utility types của TypeScript như Partial, Required, Pick, Omit, etc.</li>
-      </ul>
-      
-      <h2>Kết luận</h2>
-      <p>Trong năm 2025, sự kết hợp giữa React và TypeScript tiếp tục là lựa chọn hàng đầu cho các dự án frontend hiện đại. Với những tiến bộ về công cụ và ecosystem, việc phát triển ứng dụng trở nên hiệu quả và an toàn hơn. Bắt đầu áp dụng TypeScript vào dự án React của bạn ngay từ hôm nay để tận hưởng những lợi ích mà nó mang lại.</p>
-    `,
-    excerpt: "Khám phá các tính năng mới nhất và cách tạo ứng dụng hiện đại với React và TypeScript",
-    date: "2025-04-05",
-    readTime: "8 phút đọc",
-    author: {
-      name: "Nguyễn Văn A",
-      avatar: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=80",
-      bio: "Kỹ sư phần mềm với hơn 10 năm kinh nghiệm trong phát triển web. Chuyên gia về React và TypeScript.",
-    },
-    category: "Lập trình",
-    coverImage: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?ixlib=rb-1.2.1&auto=format&fit=crop&w=1470&q=80",
-    tags: ["React", "TypeScript", "Frontend", "JavaScript", "Web Development"],
-    comments: [
-      {
-        id: "c1",
-        author: {
-          name: "Trần Thị B",
-          avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=80",
-        },
-        date: "2025-04-06",
-        content: "Bài viết rất hữu ích! Tôi đã học được nhiều điều mới về cách sử dụng TypeScript với React.",
-        likes: 3,
-      },
-      {
-        id: "c2",
-        author: {
-          name: "Lê Văn C",
-          avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=80",
-        },
-        date: "2025-04-05",
-        content: "Tôi đã áp dụng những kỹ thuật trong bài viết này vào dự án của mình và thấy hiệu quả rõ rệt. Cảm ơn tác giả!",
-        likes: 5,
-      }
-    ],
-  };
-
-  const relatedPosts: RelatedPost[] = [
-    {
-      id: "2",
-      title: "Tối ưu hóa hiệu suất trong ứng dụng React",
-      excerpt: "Các kỹ thuật và phương pháp để cải thiện tốc độ và trải nghiệm người dùng",
-      date: "2025-04-01",
-      author: {
-        name: "Trần Thị B",
-        avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=80",
-      },
-      category: "Hiệu suất",
-      coverImage: "https://images.unsplash.com/photo-1552308995-2baac1ad5490?ixlib=rb-1.2.1&auto=format&fit=crop&w=1470&q=80",
-    },
-    {
-      id: "3",
-      title: "Thiết kế UI/UX hiện đại với Tailwind CSS",
-      excerpt: "Tạo giao diện đẹp mắt và đáp ứng nhanh với Tailwind CSS",
-      date: "2025-03-28",
-      author: {
-        name: "Lê Văn C",
-        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=80",
-      },
-      category: "UI/UX",
-      coverImage: "https://images.unsplash.com/photo-1617040619263-41c5a9ca7521?ixlib=rb-1.2.1&auto=format&fit=crop&w=1470&q=80",
-    },
-  ];
+    };
+    
+    if (!isLoading && post) {
+      fetchRelatedPosts();
+    }
+  }, [id, isLoading, post]);
 
   const handleCommentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -237,7 +88,7 @@ const BlogPost: React.FC = () => {
         shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
         break;
       case 'twitter':
-        shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(post.title)}`;
+        shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(post?.title || '')}`;
         break;
       case 'linkedin':
         shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
@@ -256,6 +107,53 @@ const BlogPost: React.FC = () => {
       window.open(shareUrl, '_blank', 'width=600,height=400');
     }
   };
+  
+  // Render loading skeleton
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <article className="max-w-4xl mx-auto">
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-2">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-4 rounded-full" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+            <Skeleton className="h-12 w-3/4 mb-6" />
+            <div className="flex items-center gap-4 mb-8">
+              <Skeleton className="h-12 w-12 rounded-full" />
+              <div>
+                <Skeleton className="h-5 w-32 mb-1" />
+                <Skeleton className="h-4 w-48" />
+              </div>
+            </div>
+          </div>
+          <Skeleton className="w-full h-[400px] rounded-lg mb-8" />
+          <div className="space-y-4 mb-12">
+            {[...Array(10)].map((_, i) => (
+              <Skeleton key={i} className="h-4 w-full" />
+            ))}
+          </div>
+        </article>
+      </div>
+    );
+  }
+  
+  if (!post) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto text-center py-20">
+          <h1 className="text-3xl font-bold mb-4">Bài viết không tồn tại</h1>
+          <p className="text-muted-foreground mb-8">
+            Bài viết bạn đang tìm kiếm có thể đã bị xóa hoặc đường dẫn không đúng.
+          </p>
+          <Button asChild>
+            <Link to="/blog">Quay lại trang Blog</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -296,21 +194,23 @@ const BlogPost: React.FC = () => {
 
         <div 
           className="prose prose-lg max-w-none mb-12"
-          dangerouslySetInnerHTML={{ __html: post.content }}
+          dangerouslySetInnerHTML={{ __html: post.content || '' }}
         />
 
         <div className="mb-12">
-          <div className="flex flex-wrap gap-2 mb-6">
-            {post.tags.map(tag => (
-              <Link 
-                key={tag} 
-                to={`/tags/${tag}`} 
-                className="px-3 py-1 bg-secondary text-secondary-foreground rounded-full text-sm hover:bg-primary hover:text-primary-foreground transition-colors"
-              >
-                #{tag}
-              </Link>
-            ))}
-          </div>
+          {post.tags && post.tags.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-6">
+              {post.tags.map(tag => (
+                <Link 
+                  key={tag} 
+                  to={`/tags/${tag}`} 
+                  className="px-3 py-1 bg-secondary text-secondary-foreground rounded-full text-sm hover:bg-primary hover:text-primary-foreground transition-colors"
+                >
+                  #{tag}
+                </Link>
+              ))}
+            </div>
+          )}
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -318,9 +218,13 @@ const BlogPost: React.FC = () => {
                 <ThumbsUp className="h-4 w-4 mr-2" />
                 Thích
               </Button>
-              <Button variant="outline" size="sm" onClick={() => document.getElementById('comments')?.scrollIntoView({ behavior: 'smooth' })}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => document.getElementById('comments')?.scrollIntoView({ behavior: 'smooth' })}
+              >
                 <MessageCircle className="h-4 w-4 mr-2" />
-                {post.comments.length} Bình luận
+                {post.comments ? post.comments.length : 0} Bình luận
               </Button>
             </div>
             
@@ -359,7 +263,7 @@ const BlogPost: React.FC = () => {
         </div>
 
         <div id="comments" className="mb-12">
-          <h3 className="text-2xl font-bold mb-6">Bình luận ({post.comments.length})</h3>
+          <h3 className="text-2xl font-bold mb-6">Bình luận ({post.comments ? post.comments.length : 0})</h3>
           
           <form onSubmit={handleCommentSubmit} className="mb-8">
             <Textarea
@@ -372,9 +276,9 @@ const BlogPost: React.FC = () => {
             <Button type="submit" disabled={!commentText.trim()}>Gửi bình luận</Button>
           </form>
           
-          {post.comments.length > 0 ? (
+          {post.comments && post.comments.length > 0 ? (
             <div className="space-y-6">
-              {post.comments.map((comment) => (
+              {post.comments.map((comment: Comment) => (
                 <div key={comment.id} className="p-4 border rounded-md">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
@@ -405,11 +309,24 @@ const BlogPost: React.FC = () => {
 
       <div className="max-w-4xl mx-auto">
         <h3 className="text-2xl font-bold mb-6">Bài viết liên quan</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {relatedPosts.map((post) => (
-            <BlogPostCard key={post.id} post={post} />
-          ))}
-        </div>
+        {isRelatedLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[...Array(2)].map((_, i) => (
+              <div key={i} className="flex flex-col space-y-3">
+                <Skeleton className="h-[200px] w-full rounded-lg" />
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-20 w-full" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {relatedPosts.map((post) => (
+              <BlogPostCard key={post.id} post={post} />
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="max-w-4xl mx-auto mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">

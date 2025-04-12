@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
@@ -8,117 +8,175 @@ import { BlogCategories } from "@/components/BlogCategories";
 import { Newsletter } from "@/components/Newsletter";
 import { Separator } from "@/components/ui/separator";
 import { Search } from 'lucide-react';
+import { blogApiService, Post } from '@/services/api';
+import { Skeleton } from '@/components/ui/skeleton';
 
-interface Post {
-  id: string;
-  title: string;
-  excerpt: string;
-  date: string;
-  author: {
-    name: string;
-    avatar: string;
-  };
-  category: string;
-  coverImage: string;
+interface PaginationState {
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
 }
 
 const Blog: React.FC = () => {
   const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [category, setCategory] = useState('all');
-  const [sortBy, setSortBy] = useState('newest');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [pagination, setPagination] = useState<PaginationState>({
+    page: 1,
+    pageSize: 6,
+    totalItems: 0,
+    totalPages: 0
+  });
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Mock data for demo
-  const posts: Post[] = [
-    {
-      id: "1",
-      title: "Bắt đầu với React và TypeScript trong năm 2025",
-      excerpt: "Khám phá các tính năng mới nhất và cách tạo ứng dụng hiện đại với React và TypeScript",
-      date: "2025-04-05",
-      author: {
-        name: "Nguyễn Văn A",
-        avatar: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=80",
-      },
-      category: "Lập trình",
-      coverImage: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?ixlib=rb-1.2.1&auto=format&fit=crop&w=1470&q=80",
-    },
-    {
-      id: "2",
-      title: "Tối ưu hóa hiệu suất trong ứng dụng React",
-      excerpt: "Các kỹ thuật và phương pháp để cải thiện tốc độ và trải nghiệm người dùng",
-      date: "2025-04-01",
-      author: {
-        name: "Trần Thị B",
-        avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=80",
-      },
-      category: "Hiệu suất",
-      coverImage: "https://images.unsplash.com/photo-1552308995-2baac1ad5490?ixlib=rb-1.2.1&auto=format&fit=crop&w=1470&q=80",
-    },
-    {
-      id: "3",
-      title: "Thiết kế UI/UX hiện đại với Tailwind CSS",
-      excerpt: "Tạo giao diện đẹp mắt và đáp ứng nhanh với Tailwind CSS",
-      date: "2025-03-28",
-      author: {
-        name: "Lê Văn C",
-        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=80",
-      },
-      category: "UI/UX",
-      coverImage: "https://images.unsplash.com/photo-1617040619263-41c5a9ca7521?ixlib=rb-1.2.1&auto=format&fit=crop&w=1470&q=80",
-    },
-    {
-      id: "4",
-      title: "Quản lý trạng thái toàn cục với Redux Toolkit",
-      excerpt: "Cách tốt nhất để quản lý trạng thái ứng dụng phức tạp trong React",
-      date: "2025-03-25",
-      author: {
-        name: "Phạm Thị D",
-        avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=80",
-      },
-      category: "Redux",
-      coverImage: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?ixlib=rb-1.2.1&auto=format&fit=crop&w=1470&q=80",
-    },
-    {
-      id: "5",
-      title: "Xây dựng API với Node.js và Express",
-      excerpt: "Hướng dẫn từng bước để tạo một RESTful API bằng Node.js và Express",
-      date: "2025-03-20",
-      author: {
-        name: "Hoàng Minh E",
-        avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=80",
-      },
-      category: "Backend",
-      coverImage: "https://images.unsplash.com/photo-1627398242454-45a1465c2479?ixlib=rb-1.2.1&auto=format&fit=crop&w=1470&q=80",
-    },
-    {
-      id: "6",
-      title: "Bảo mật trong ứng dụng web hiện đại",
-      excerpt: "Các phương pháp bảo mật tốt nhất để bảo vệ ứng dụng web của bạn khỏi các mối đe dọa",
-      date: "2025-03-15",
-      author: {
-        name: "Vũ Hoài F",
-        avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=80",
-      },
-      category: "Bảo mật",
-      coverImage: "https://images.unsplash.com/photo-1563013544-824ae1b704d3?ixlib=rb-1.2.1&auto=format&fit=crop&w=1470&q=80",
-    },
-  ];
-
-  // Filter and sort posts
-  const filteredPosts = posts
-    .filter(post => 
-      (category === 'all' || post.category === category) &&
-      (post.title.toLowerCase().includes(search.toLowerCase()) || 
-       post.excerpt.toLowerCase().includes(search.toLowerCase()))
-    )
-    .sort((a, b) => {
-      if (sortBy === 'newest') {
-        return new Date(b.date).getTime() - new Date(a.date).getTime();
-      } else {
-        return new Date(a.date).getTime() - new Date(b.date).getTime();
-      }
-    });
-
+  // Danh sách danh mục cho dropdown
   const categories = ['Lập trình', 'Hiệu suất', 'UI/UX', 'Redux', 'Backend', 'Bảo mật'];
+
+  // Fetch posts từ API
+  const fetchPosts = async () => {
+    setIsLoading(true);
+    try {
+      const response = await blogApiService.getPosts({
+        category: category !== 'all' ? category : undefined,
+        search,
+        sortBy,
+        page: pagination.page,
+        pageSize: pagination.pageSize
+      });
+      
+      setPosts(response.posts);
+      setPagination(response.pagination);
+    } catch (error) {
+      console.error('Failed to fetch posts:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Xử lý khi người dùng nhấn Enter hoặc nút tìm kiếm
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSearch(searchInput);
+    setPagination(prev => ({ ...prev, page: 1 })); // Reset về trang 1 khi tìm kiếm
+  };
+
+  // Xử lý thay đổi trang
+  const handlePageChange = (page: number) => {
+    setPagination(prev => ({ ...prev, page }));
+  };
+
+  // Gọi API khi các bộ lọc thay đổi
+  useEffect(() => {
+    fetchPosts();
+  }, [search, category, sortBy, pagination.page]);
+
+  // Render bài viết hoặc skeleton loading
+  const renderPosts = () => {
+    if (isLoading) {
+      return Array(6).fill(0).map((_, index) => (
+        <div key={`skeleton-${index}`} className="flex flex-col space-y-3">
+          <Skeleton className="h-[200px] w-full rounded-lg" />
+          <Skeleton className="h-6 w-3/4" />
+          <Skeleton className="h-4 w-1/2" />
+          <Skeleton className="h-20 w-full" />
+        </div>
+      ));
+    }
+
+    if (posts.length === 0) {
+      return (
+        <div className="col-span-full text-center py-12">
+          <h3 className="text-xl font-semibold mb-2">Không tìm thấy bài viết nào</h3>
+          <p className="text-muted-foreground">Vui lòng thử lại với từ khóa khác hoặc danh mục khác.</p>
+        </div>
+      );
+    }
+
+    return posts.map((post) => (
+      <BlogPostCard key={post.id} post={post} />
+    ));
+  };
+
+  // Render phân trang
+  const renderPagination = () => {
+    if (pagination.totalPages <= 1) return null;
+
+    return (
+      <Pagination>
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious 
+              href="#" 
+              onClick={(e) => {
+                e.preventDefault();
+                if (pagination.page > 1) {
+                  handlePageChange(pagination.page - 1);
+                }
+              }} 
+              className={pagination.page <= 1 ? "pointer-events-none opacity-50" : ""}
+            />
+          </PaginationItem>
+          
+          {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
+            .filter(page => {
+              // Hiển thị trang hiện tại, trang đầu, trang cuối và các trang xung quanh trang hiện tại
+              const current = pagination.page;
+              return page === 1 || 
+                    page === pagination.totalPages || 
+                    (page >= current - 1 && page <= current + 1);
+            })
+            .map((page, index, array) => {
+              // Thêm ellipsis nếu có khoảng trống
+              const showEllipsisBefore = index > 0 && array[index - 1] !== page - 1;
+              const showEllipsisAfter = index < array.length - 1 && array[index + 1] !== page + 1;
+
+              return (
+                <React.Fragment key={page}>
+                  {showEllipsisBefore && (
+                    <PaginationItem>
+                      <span className="px-4">...</span>
+                    </PaginationItem>
+                  )}
+                  <PaginationItem>
+                    <PaginationLink 
+                      href="#" 
+                      isActive={page === pagination.page}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handlePageChange(page);
+                      }}
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                  {showEllipsisAfter && (
+                    <PaginationItem>
+                      <span className="px-4">...</span>
+                    </PaginationItem>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          
+          <PaginationItem>
+            <PaginationNext 
+              href="#" 
+              onClick={(e) => {
+                e.preventDefault();
+                if (pagination.page < pagination.totalPages) {
+                  handlePageChange(pagination.page + 1);
+                }
+              }}
+              className={pagination.page >= pagination.totalPages ? "pointer-events-none opacity-50" : ""}
+            />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
+    );
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -131,14 +189,14 @@ const Blog: React.FC = () => {
 
       <div className="flex flex-col lg:flex-row gap-8 mb-12">
         <div className="lg:w-3/4">
-          <div className="flex flex-col md:flex-row gap-4 mb-8">
+          <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4 mb-8">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
                 placeholder="Tìm kiếm bài viết..."
                 className="pl-10"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
               />
             </div>
             <div className="flex gap-4">
@@ -153,7 +211,7 @@ const Blog: React.FC = () => {
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={sortBy} onValueChange={setSortBy}>
+              <Select value={sortBy} onValueChange={(value) => setSortBy(value as 'newest' | 'oldest')}>
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Sắp xếp theo" />
                 </SelectTrigger>
@@ -163,40 +221,13 @@ const Blog: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
+          </form>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {renderPosts()}
           </div>
 
-          {filteredPosts.length === 0 ? (
-            <div className="text-center py-12">
-              <h3 className="text-xl font-semibold mb-2">Không tìm thấy bài viết nào</h3>
-              <p className="text-muted-foreground">Vui lòng thử lại với từ khóa khác hoặc danh mục khác.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              {filteredPosts.map((post) => (
-                <BlogPostCard key={post.id} post={post} />
-              ))}
-            </div>
-          )}
-
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious href="#" />
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationLink href="#" isActive>1</PaginationLink>
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationLink href="#">2</PaginationLink>
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationLink href="#">3</PaginationLink>
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationNext href="#" />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
+          {renderPagination()}
         </div>
 
         <div className="lg:w-1/4">
