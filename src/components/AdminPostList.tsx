@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,7 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { blogApiService, Post } from '@/services/api';
+import { blogApiService, Post } from '@/services/blogApi';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 
@@ -74,13 +73,11 @@ export const AdminPostList: React.FC = () => {
   };
   
   const handleDeleteSelected = () => {
-    // Trong trường hợp thực tế, đây là nơi để gọi API xóa
     toast({
       title: "Đã xóa bài viết",
       description: `Đã xóa ${selectedPosts.length} bài viết được chọn.`
     });
     
-    // Cập nhật state local để mô phỏng xóa
     setPosts(posts.filter(post => !selectedPosts.includes(post.id)));
     setSelectedPosts([]);
   };
@@ -94,7 +91,6 @@ export const AdminPostList: React.FC = () => {
     setStatusFilter('all');
   };
 
-  // Render loading skeleton
   const renderLoading = () => (
     <TableRow>
       <TableCell colSpan={9} className="py-10">

@@ -10,7 +10,7 @@ import { BlogCategories } from "@/components/BlogCategories";
 import { Newsletter } from "@/components/Newsletter";
 import { Share, MessageCircle, ThumbsUp, Facebook, Twitter, Linkedin, Link as LinkIcon, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { blogApiService, Post, Comment } from '@/services/api';
+import { blogApiService, Post, Comment } from '@/services/blogApi';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const BlogPost: React.FC = () => {
@@ -20,6 +20,7 @@ const BlogPost: React.FC = () => {
   const [commentText, setCommentText] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isRelatedLoading, setIsRelatedLoading] = useState(true);
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const { toast } = useToast();
   
   // Fetch thông tin bài viết từ API
@@ -68,14 +69,33 @@ const BlogPost: React.FC = () => {
     }
   }, [id, isLoading, post]);
 
-  const handleCommentSubmit = (e: React.FormEvent) => {
+  const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (commentText.trim()) {
+    if (!commentText.trim() || !id) return;
+    
+    setIsSubmittingComment(true);
+    try {
+      const result = await blogApiService.addComment(id, commentText);
       toast({
         title: "Bình luận đã được gửi",
-        description: "Bình luận của bạn đang chờ phê duyệt."
+        description: "Bình luận của bạn đã được thêm vào bài viết."
       });
+      
+      // Trong thực tế, bạn có thể fetch lại post để hiển thị comment mới
+      // hoặc thêm comment mới vào state hiện tại
+      if (post) {
+        const updatedPost = { 
+          ...post, 
+          comments: [...(post.comments || []), result.comment]
+        };
+        setPost(updatedPost);
+      }
+      
       setCommentText('');
+    } catch (error) {
+      console.error('Failed to submit comment:', error);
+    } finally {
+      setIsSubmittingComment(false);
     }
   };
 

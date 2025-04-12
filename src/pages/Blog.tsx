@@ -8,7 +8,7 @@ import { BlogCategories } from "@/components/BlogCategories";
 import { Newsletter } from "@/components/Newsletter";
 import { Separator } from "@/components/ui/separator";
 import { Search } from 'lucide-react';
-import { blogApiService, Post } from '@/services/api';
+import { blogApiService, Post } from '@/services/blogApi';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface PaginationState {
